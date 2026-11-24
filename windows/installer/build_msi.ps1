@@ -1,4 +1,4 @@
-﻿param(
+param(
   [string]$SourceDir = "build/windows/x64/runner/Release",
   [string]$OutputPath = "deginage-windows-x64.msi",
   [string]$Version = "",

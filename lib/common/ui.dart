@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../src/rust/api/models.dart';
 
 /// アプリケーションのバージョン
-const String kAppVersion = '1.0.1';
+const String kAppVersion = '1.0.2';
 
 /// 日本語表示用のフォントフォールバック
 const List<String> kFontFallback = [
