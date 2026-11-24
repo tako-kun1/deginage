@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="ja-JP" Codepage="932" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="PackageDescription" Value="Deginage デジタルサイネージ インストーラー" />
+  <String Id="PackageComments" Value="Windows / Linux 向けデジタルサイネージソフトウェア Deginage" />
+  <String Id="DowngradeError" Value="より新しいバージョンの Deginage が既にインストールされています。" />
+  <String Id="FeatureMainDesc" Value="Deginage 本体および必要なランタイムファイル" />
+  <String Id="ShortcutSettingsName" Value="Deginage 設定" />
+  <String Id="ShortcutSettingsDesc" Value="Deginage デジタルサイネージの設定画面を開きます" />
+  <String Id="ShortcutSignageName" Value="Deginage サイネージ起動" />
+  <String Id="ShortcutSignageDesc" Value="デジタルサイネージ画面を直接起動します" />
+
+  <!-- 標準ウィザード文言のカスタマイズ -->
+  <String Id="WelcomeDlgTitle" Value="{\WixUI_Font_Bigger}Deginage セットアップウィザードへようこそ" />
+  <String Id="WelcomeDlgDescription" Value="このウィザードでは、お使いのコンピューターに Deginage デジタルサイネージをインストールします。[次へ] をクリックして続行してください。" />
+  <String Id="LicenseAgreementDlgTitle" Value="{\WixUI_Font_Title}ご利用にあたっての注意事項" />
+  <String Id="LicenseAgreementDlgDescription" Value="以下の内容をご確認のうえ、同意いただける場合はチェックを入れて続行してください。" />
+  <String Id="InstallDirDlgTitle" Value="{\WixUI_Font_Title}インストール先フォルダーの選択" />
+  <String Id="InstallDirDlgDescription" Value="Deginage をインストールするフォルダーを指定してください。" />
+  <String Id="ExitDialogTitle" Value="{\WixUI_Font_Bigger}Deginage のインストールが完了しました" />
+</WixLocalization>

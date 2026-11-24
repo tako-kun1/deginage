@@ -58,11 +58,24 @@ jobs:
           $out = "deginage-windows-x64.zip"
           Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath $out -Force
 
+      - name: WiX Toolset v5 をセットアップ
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add --global WixToolset.UI.wixext/5.0.2
+
+      - name: Windows MSI インストーラーをビルド
+        shell: pwsh
+        run: |
+          pwsh windows/installer/build_msi.ps1 -OutputPath "deginage-windows-x64.msi"
+
       - name: ビルド成果物をアップロード
         uses: actions/upload-artifact@v4
         with:
           name: deginage-windows-x64
-          path: deginage-windows-x64.zip
+          path: |
+            deginage-windows-x64.zip
+            deginage-windows-x64.msi
 
   build-linux:
     name: Linux (x64) ビルド
@@ -134,4 +147,5 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/deginage-windows-x64.zip
+            artifacts/deginage-windows-x64.msi
             artifacts/deginage-linux-x64.tar.gz
