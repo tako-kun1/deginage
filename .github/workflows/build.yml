@@ -1,0 +1,137 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Windows (x64) ビルド
+    runs-on: windows-latest
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Rust ツールチェインをセットアップ
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust ビルドキャッシュ
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> target
+
+      - name: Flutter をセットアップ
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.1'
+          channel: 'stable'
+          cache: true
+
+      - name: 依存パッケージを取得
+        run: flutter pub get
+
+      - name: Rust 単体テスト
+        working-directory: rust
+        run: cargo test
+
+      - name: Flutter 静的解析・テスト
+        run: |
+          flutter analyze --no-fatal-infos
+          flutter test
+
+      - name: Windows リリースビルド
+        run: flutter build windows --release
+
+      - name: リリースアーカイブを作成
+        shell: pwsh
+        run: |
+          $out = "deginage-windows-x64.zip"
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath $out -Force
+
+      - name: ビルド成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: deginage-windows-x64
+          path: deginage-windows-x64.zip
+
+  build-linux:
+    name: Linux (x64) ビルド
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: 必要なシステムパッケージをインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev \
+            libmpv-dev mpv
+
+      - name: Rust ツールチェインをセットアップ
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust ビルドキャッシュ
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust -> target
+
+      - name: Flutter をセットアップ
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.1'
+          channel: 'stable'
+          cache: true
+
+      - name: 依存パッケージを取得
+        run: flutter pub get
+
+      - name: Rust 単体テスト
+        working-directory: rust
+        run: cargo test
+
+      - name: Linux リリースビルド
+        run: flutter build linux --release
+
+      - name: リリースアーカイブを作成
+        run: |
+          tar -czf deginage-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+
+      - name: ビルド成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: deginage-linux-x64
+          path: deginage-linux-x64.tar.gz
+
+  release:
+    name: GitHub Release 作成
+    needs: [build-windows, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: GitHub Release を公開
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/deginage-windows-x64.zip
+            artifacts/deginage-linux-x64.tar.gz

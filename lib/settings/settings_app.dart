@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 import '../common/config_controller.dart';
 import '../common/signage_launcher.dart';
 import '../common/ui.dart';
+import '../common/updater.dart';
 import '../src/rust/api/simple.dart';
 import 'datasets_page.dart';
 import 'display_page.dart';
@@ -57,6 +58,8 @@ class _SettingsShellState extends State<SettingsShell> with WindowListener {
   int _index = 0;
   bool _running = false;
   Timer? _statusTimer;
+  ReleaseInfo? _availableUpdate;
+  bool _checkingUpdate = false;
 
   @override
   void initState() {
@@ -67,6 +70,80 @@ class _SettingsShellState extends State<SettingsShell> with WindowListener {
     _statusTimer = Timer.periodic(
       const Duration(seconds: 3),
       (_) => _refreshStatus(),
+    );
+    unawaited(_checkUpdate(manual: false));
+  }
+
+  Future<void> _checkUpdate({required bool manual}) async {
+    if (_checkingUpdate) return;
+    setState(() => _checkingUpdate = true);
+    try {
+      final info = await AppUpdater.checkForUpdate();
+      if (!mounted) return;
+      if (info != null && info.hasUpdate) {
+        setState(() => _availableUpdate = info);
+        if (manual) _showUpdateDialog(info);
+      } else if (manual) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('現在のバージョン (v$kAppVersion) は最新です')),
+        );
+      }
+    } catch (e) {
+      if (manual && mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('アップデートの確認に失敗しました: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _checkingUpdate = false);
+    }
+  }
+
+  void _showUpdateDialog(ReleaseInfo info) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.system_update_alt, size: 36),
+        title: Text('新しいバージョン (${info.tagName}) が利用可能です'),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('現在のバージョン: v$kAppVersion → 最新: ${info.tagName}'),
+              if (info.body.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  '変更内容:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  child: SingleChildScrollView(
+                    child: SelectableText(info.body),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('あとで'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              AppUpdater.openUrl(info.htmlUrl);
+            },
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('リリースページを開く'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -115,6 +192,8 @@ class _SettingsShellState extends State<SettingsShell> with WindowListener {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Image.asset('assets/icon/app_icon.png', width: 28, height: 28),
+            const SizedBox(width: 10),
             const Text('Deginage デジタルサイネージ 設定'),
             const SizedBox(width: 10),
             Text(
@@ -126,6 +205,28 @@ class _SettingsShellState extends State<SettingsShell> with WindowListener {
           ],
         ),
         actions: [
+          if (_availableUpdate != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton.tonalIcon(
+                onPressed: () => _showUpdateDialog(_availableUpdate!),
+                icon: const Icon(Icons.system_update_alt, size: 18),
+                label: Text('アップデート ${_availableUpdate!.tagName}'),
+              ),
+            ),
+          IconButton(
+            tooltip: 'アップデートを確認',
+            onPressed: _checkingUpdate
+                ? null
+                : () => _checkUpdate(manual: true),
+            icon: _checkingUpdate
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.update),
+          ),
           ListenableBuilder(
             listenable: c,
             builder: (context, _) => c.lastError == null
@@ -204,6 +305,11 @@ class _SettingsShellState extends State<SettingsShell> with WindowListener {
                   child: TextButton(
                     onPressed: () => showAboutDialog(
                       context: context,
+                      applicationIcon: Image.asset(
+                        'assets/icon/app_icon.png',
+                        width: 48,
+                        height: 48,
+                      ),
                       applicationName: 'Deginage',
                       applicationVersion:
                           'v$kAppVersion (Rust コア v${coreVersion()})',

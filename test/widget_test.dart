@@ -2,10 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:deginage/common/ui.dart';
+import 'package:deginage/common/updater.dart';
 import 'package:deginage/signage/transition_switcher.dart';
 import 'package:deginage/src/rust/api/models.dart';
 
 void main() {
+  test('バージョン比較が正しく動作する', () {
+    expect(AppUpdater.isNewerVersion('1.0.0', '1.0.1'), isTrue);
+    expect(AppUpdater.isNewerVersion('1.0.0', 'v1.1.0'), isTrue);
+    expect(AppUpdater.isNewerVersion('1.2.0', '1.10.0'), isTrue);
+    expect(AppUpdater.isNewerVersion('1.0.0', '1.0.0'), isFalse);
+    expect(AppUpdater.isNewerVersion('1.1.0', '1.0.9'), isFalse);
+    expect(AppUpdater.isNewerVersion('1.0.0-beta.1', '1.0.0'), isTrue);
+    expect(AppUpdater.isNewerVersion('1.0.0', '1.0.0-beta.1'), isFalse);
+  });
+
   test('メディア拡張子の判定が正しく動作する', () {
     expect(mediaKindForPath('C:/media/sample.png'), MediaKind.image);
     expect(mediaKindForPath('/home/user/movie.MP4'), MediaKind.video);
